@@ -7,6 +7,18 @@ import {
   changeTaskStatus,
 } from "../api/taskApi";
 
+const COLUMN_CONFIG = {
+  PENDIENTE: { label: "📋 Pendiente", color: "#6366f1", bg: "#1e1b4b" },
+  EN_PROGRESO: { label: "⚡ En Progreso", color: "#f59e0b", bg: "#1c1a0e" },
+  COMPLETADO: { label: "✅ Completado", color: "#10b981", bg: "#052e16" },
+};
+
+const PRIORIDAD_CONFIG = {
+  ALTA: { color: "#f87171", bg: "#2d1515", label: "🔴 Alta" },
+  MEDIA: { color: "#fbbf24", bg: "#2d2515", label: "🟡 Media" },
+  BAJA: { color: "#34d399", bg: "#152d1e", label: "🟢 Baja" },
+};
+
 function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,254 +62,401 @@ function Dashboard() {
     setTasks((prev) => prev.map((t) => (t.id === id ? actualizada : t)));
   };
 
-  if (loading) return <p style={{ padding: "2rem" }}>Cargando tareas...</p>;
-
-  return (
-    <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+  if (loading)
+    return (
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
-          marginBottom: "2rem",
+          height: "100vh",
+          color: "#6366f1",
+          fontSize: "1.2rem",
         }}
       >
-        <h1 style={{ fontSize: "1.8rem" }}>TaskFlow</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
+        Cargando tareas...
+      </div>
+    );
+
+  return (
+    <div
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+    >
+      {/* NAVBAR */}
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "1.5rem 2rem",
+          background: "#0a0a18",
+        }}
+      >
+        <span
           style={{
-            background: "#4f46e5",
-            color: "white",
-            border: "none",
-            padding: "0.6rem 1.2rem",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "1rem",
+            fontSize: "3rem",
+            fontWeight: "700",
+            letterSpacing: "-0.5px",
+            background: "linear-gradient(135deg, #6366f1, #a855f7, #06b6d4)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
-          {showForm ? "Cancelar" : "+ Nueva tarea"}
-        </button>
-      </div>
+         ✨  My personal Taskflow ✨ 
+        </span>
+      </nav>
 
-      {showForm && (
+      {/* CONTENIDO */}
+      <div
+        style={{
+          flex: 1,
+          padding: "2rem",
+          maxWidth: "1300px",
+          margin: "0 auto",
+          width: "100%",
+        }}
+      >
+        {/* CABECERA */}
         <div
           style={{
-            background: "white",
-            padding: "1.5rem",
-            borderRadius: "12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: "2rem",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           }}
         >
-          <h2 style={{ marginBottom: "1rem" }}>Nueva tarea</h2>
-          <input
-            placeholder="Título *"
-            value={form.titulo}
-            onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-            style={{
-              width: "100%",
-              padding: "0.6rem",
-              marginBottom: "0.8rem",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              fontSize: "1rem",
-              boxSizing: "border-box",
-            }}
-          />
-          <textarea
-            placeholder="Descripción"
-            value={form.descripcion}
-            onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-            style={{
-              width: "100%",
-              padding: "0.6rem",
-              marginBottom: "0.8rem",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              fontSize: "1rem",
-              boxSizing: "border-box",
-              minHeight: "80px",
-            }}
-          />
-          <select
-            value={form.prioridad}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                prioridad: e.target.value as Task["prioridad"],
-              })
-            }
-            style={{
-              padding: "0.6rem",
-              marginBottom: "0.8rem",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              fontSize: "1rem",
-              marginRight: "1rem",
-            }}
-          >
-            <option value="BAJA">🟢 Baja</option>
-            <option value="MEDIA">🟡 Media</option>
-            <option value="ALTA">🔴 Alta</option>
-          </select>
-          <button
-            onClick={handleCreate}
-            style={{
-              background: "#4f46e5",
-              color: "white",
-              border: "none",
-              padding: "0.6rem 1.5rem",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
-          >
-            Crear tarea
-          </button>
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: "1rem" }}>
-        {(["PENDIENTE", "EN_PROGRESO", "COMPLETADO"] as Task["estado"][]).map(
-          (estado) => (
-            <div
-              key={estado}
+          <div>
+            <h1
               style={{
-                flex: 1,
-                background: "white",
-                borderRadius: "12px",
-                padding: "1rem",
-                minHeight: "400px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                fontSize: "1.4rem",
+                fontWeight: "600",
+                color: "#c7d2fe",
               }}
             >
-              <h2 style={{ marginBottom: "1rem", fontSize: "1rem" }}>
-                {estado === "PENDIENTE" && "📋 Pendiente"}
-                {estado === "EN_PROGRESO" && "⚡ En Progreso"}
-                {estado === "COMPLETADO" && "✅ Completado"}
-                <span
+              Mis Tareas
+            </h1>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.85rem",
+                marginTop: "0.2rem",
+              }}
+            >
+              {tasks.length} tarea{tasks.length !== 1 ? "s" : ""} en total
+            </p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{
+              background: showForm
+                ? "#1e1e3a"
+                : "linear-gradient(135deg, #6366f1, #a855f7)",
+              color: "white",
+              border: "none",
+              padding: "0.65rem 1.4rem",
+              borderRadius: "10px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)",
+            }}
+          >
+            {showForm ? "✕ Cancelar" : "+ Nueva tarea"}
+          </button>
+        </div>
+
+        {/* FORMULARIO MODAL */}
+        {showForm && (
+          <div
+            style={{
+              background: "#13132a",
+              border: "1px solid #2d2d5a",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              marginBottom: "2rem",
+              boxShadow: "0 8px 32px rgba(99,102,241,0.15)",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.1rem",
+                fontWeight: "600",
+                marginBottom: "1rem",
+                color: "#a5b4fc",
+              }}
+            >
+              Nueva tarea
+            </h2>
+            <input
+              placeholder="Título *"
+              value={form.titulo}
+              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              style={{
+                width: "100%",
+                padding: "0.7rem 1rem",
+                marginBottom: "0.8rem",
+                background: "#0d0d1a",
+                border: "1px solid #2d2d5a",
+                borderRadius: "8px",
+                color: "#e2e8f0",
+                fontSize: "0.95rem",
+                outline: "none",
+              }}
+            />
+            <textarea
+              placeholder="Descripción (opcional)"
+              value={form.descripcion}
+              onChange={(e) =>
+                setForm({ ...form, descripcion: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "0.7rem 1rem",
+                marginBottom: "0.8rem",
+                background: "#0d0d1a",
+                border: "1px solid #2d2d5a",
+                borderRadius: "8px",
+                color: "#e2e8f0",
+                fontSize: "0.95rem",
+                outline: "none",
+                minHeight: "80px",
+                resize: "vertical",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                gap: "0.8rem",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <select
+                value={form.prioridad}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    prioridad: e.target.value as Task["prioridad"],
+                  })
+                }
+                style={{
+                  padding: "0.65rem 1rem",
+                  background: "#0d0d1a",
+                  border: "1px solid #2d2d5a",
+                  borderRadius: "8px",
+                  color: "#e2e8f0",
+                  fontSize: "0.9rem",
+                }}
+              >
+                <option value="BAJA">🟢 Baja</option>
+                <option value="MEDIA">🟡 Media</option>
+                <option value="ALTA">🔴 Alta</option>
+              </select>
+              <button
+                onClick={handleCreate}
+                style={{
+                  background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                  color: "white",
+                  border: "none",
+                  padding: "0.65rem 1.5rem",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  fontWeight: "600",
+                  boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
+                }}
+              >
+                Crear tarea
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* COLUMNAS KANBAN */}
+        <div style={{ display: "flex", gap: "1.2rem" }}>
+          {(Object.keys(COLUMN_CONFIG) as Task["estado"][]).map((estado) => {
+            const col = COLUMN_CONFIG[estado];
+            const tareas = tasks.filter((t) => t.estado === estado);
+            return (
+              <div
+                key={estado}
+                style={{
+                  flex: 1,
+                  background: "#0f0f20",
+                  borderRadius: "16px",
+                  padding: "1rem",
+                  border: `1px solid ${col.color}33`,
+                  minHeight: "450px",
+                }}
+              >
+                {/* Cabecera columna */}
+                <div
                   style={{
-                    marginLeft: "0.5rem",
-                    color: "#999",
-                    fontSize: "0.85rem",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                    padding: "0.5rem 0.75rem",
+                    background: col.bg,
+                    borderRadius: "8px",
+                    borderLeft: `3px solid ${col.color}`,
                   }}
                 >
-                  ({tasks.filter((t) => t.estado === estado).length})
-                </span>
-              </h2>
-
-              {tasks
-                .filter((t) => t.estado === estado)
-                .map((task) => (
-                  <div
-                    key={task.id}
+                  <span
                     style={{
-                      background: "#f8f9fa",
-                      borderRadius: "8px",
-                      padding: "0.75rem",
-                      marginBottom: "0.5rem",
-                      borderLeft: `4px solid ${task.prioridad === "ALTA" ? "#e74c3c" : task.prioridad === "MEDIA" ? "#f39c12" : "#2ecc71"}`,
+                      fontWeight: "600",
+                      fontSize: "0.9rem",
+                      color: col.color,
                     }}
                   >
-                    <h3
-                      style={{ fontSize: "0.95rem", marginBottom: "0.25rem" }}
-                    >
-                      {task.titulo}
-                    </h3>
-                    {task.descripcion && (
-                      <p
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "#666",
-                          marginBottom: "0.5rem",
-                        }}
-                      >
-                        {task.descripcion}
-                      </p>
-                    )}
+                    {col.label}
+                  </span>
+                  <span
+                    style={{
+                      background: col.color + "22",
+                      color: col.color,
+                      borderRadius: "999px",
+                      padding: "0.1rem 0.6rem",
+                      fontSize: "0.8rem",
+                      fontWeight: "700",
+                    }}
+                  >
+                    {tareas.length}
+                  </span>
+                </div>
+
+                {/* Tarjetas */}
+                {tareas.map((task) => {
+                  const prio = PRIORIDAD_CONFIG[task.prioridad];
+                  return (
                     <div
+                      key={task.id}
                       style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        flexWrap: "wrap",
-                        alignItems: "center",
+                        background: "#13132a",
+                        borderRadius: "10px",
+                        padding: "0.85rem",
+                        marginBottom: "0.6rem",
+                        border: "1px solid #1e1e3a",
+                        borderLeft: `3px solid ${prio.color}`,
                       }}
                     >
-                      <span
+                      <h3
                         style={{
-                          fontSize: "0.7rem",
-                          background:
-                            task.prioridad === "ALTA"
-                              ? "#fde8e8"
-                              : task.prioridad === "MEDIA"
-                                ? "#fef3e2"
-                                : "#e8f8f0",
-                          color:
-                            task.prioridad === "ALTA"
-                              ? "#e74c3c"
-                              : task.prioridad === "MEDIA"
-                                ? "#f39c12"
-                                : "#2ecc71",
-                          padding: "0.2rem 0.5rem",
-                          borderRadius: "4px",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          marginBottom: "0.3rem",
+                          color: "#e2e8f0",
                         }}
                       >
-                        {task.prioridad}
-                      </span>
-                      <select
-                        value={task.estado}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            task.id,
-                            e.target.value as Task["estado"],
-                          )
-                        }
+                        {task.titulo}
+                      </h3>
+                      {task.descripcion && (
+                        <p
+                          style={{
+                            fontSize: "0.78rem",
+                            color: "#64748b",
+                            marginBottom: "0.6rem",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {task.descripcion}
+                        </p>
+                      )}
+                      <div
                         style={{
-                          fontSize: "0.75rem",
-                          padding: "0.2rem",
-                          border: "1px solid #ddd",
-                          borderRadius: "4px",
-                          cursor: "pointer",
+                          display: "flex",
+                          gap: "0.4rem",
+                          alignItems: "center",
+                          flexWrap: "wrap",
                         }}
                       >
-                        <option value="PENDIENTE">Pendiente</option>
-                        <option value="EN_PROGRESO">En Progreso</option>
-                        <option value="COMPLETADO">Completado</option>
-                      </select>
-                      <button
-                        onClick={() => handleDelete(task.id)}
-                        style={{
-                          fontSize: "0.75rem",
-                          background: "none",
-                          border: "1px solid #fca5a5",
-                          color: "#e74c3c",
-                          padding: "0.2rem 0.5rem",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Borrar
-                      </button>
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            fontWeight: "600",
+                            background: prio.bg,
+                            color: prio.color,
+                            padding: "0.2rem 0.6rem",
+                            borderRadius: "999px",
+                          }}
+                        >
+                          {prio.label}
+                        </span>
+                        <select
+                          value={task.estado}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              task.id,
+                              e.target.value as Task["estado"],
+                            )
+                          }
+                          style={{
+                            fontSize: "0.72rem",
+                            padding: "0.2rem 0.4rem",
+                            background: "#0d0d1a",
+                            border: "1px solid #2d2d5a",
+                            borderRadius: "6px",
+                            color: "#94a3b8",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <option value="PENDIENTE">Pendiente</option>
+                          <option value="EN_PROGRESO">En Progreso</option>
+                          <option value="COMPLETADO">Completado</option>
+                        </select>
+                        <button
+                          onClick={() => handleDelete(task.id)}
+                          style={{
+                            fontSize: "0.7rem",
+                            background: "none",
+                            border: "1px solid #3d1515",
+                            color: "#f87171",
+                            padding: "0.2rem 0.5rem",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          Borrar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
-              {tasks.filter((t) => t.estado === estado).length === 0 && (
-                <p
-                  style={{
-                    color: "#bbb",
-                    fontSize: "0.85rem",
-                    textAlign: "center",
-                    marginTop: "2rem",
-                  }}
-                >
-                  No hay tareas aquí
-                </p>
-              )}
-            </div>
-          ),
-        )}
+                {tareas.length === 0 && (
+                  <p
+                    style={{
+                      color: "#2d2d5a",
+                      fontSize: "0.82rem",
+                      textAlign: "center",
+                      marginTop: "3rem",
+                    }}
+                  >
+                    Sin tareas aquí
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* FOOTER MOTIVACIONAL */}
+      <footer
+        style={{
+          textAlign: "center",
+          padding: "2rem",
+          
+        }}
+      >
+        <p
+          style={{
+            fontSize: "1rem",
+            fontWeight: "500",
+            WebkitBackgroundClip: "text",
+            
+          }}
+        >
+          💸 KEEP HUSTLING 💸
+        </p>
+      </footer>
     </div>
   );
 }
