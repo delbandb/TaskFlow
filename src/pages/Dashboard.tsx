@@ -33,6 +33,8 @@ function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState<CreateTaskDTO>(EMPTY_FORM);
+  const [filtroBusqueda, setFiltroBusqueda] = useState('')
+  const [filtroPrioridad, setFiltroPrioridad] = useState<'TODAS' | Task['prioridad']>('TODAS')
 
   useEffect(() => {
     getTasks()
@@ -79,6 +81,15 @@ function Dashboard() {
     const actualizada = await changeTaskStatus(id, estado);
     setTasks((prev) => prev.map((t) => (t.id === id ? actualizada : t)));
   };
+  
+  const tareasFiltradas = tasks.filter((task) => {
+  
+    const coincideBusqueda = task.titulo.toLowerCase().includes(filtroBusqueda.toLowerCase())
+    const coincidePrioridad = filtroPrioridad === 'TODAS' || task.prioridad === filtroPrioridad
+    return coincideBusqueda && coincidePrioridad
+  })
+
+
 
   if (loading)
     return (
@@ -114,6 +125,36 @@ function Dashboard() {
           >
             {showForm ? "✕ Cancelar" : "+ Nueva tarea"}
           </button>
+        </div>
+
+       {/* FILTROS */}
+        <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <input
+            placeholder="🔍 Buscar tarea..."
+            value={filtroBusqueda}
+            onChange={e => setFiltroBusqueda(e.target.value)}
+            style={{
+              flex: 1, minWidth: '200px', padding: '0.6rem 1rem',
+              background: '#13132a', border: '1px solid #2d2d5a',
+              borderRadius: '8px', color: '#e2e8f0', fontSize: '0.9rem', outline: 'none',
+            }}
+          />
+          {(['TODAS', 'ALTA', 'MEDIA', 'BAJA'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setFiltroPrioridad(p)}
+              style={{
+                padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600',
+                border: 'none', cursor: 'pointer',
+                background: filtroPrioridad === p
+                  ? p === 'ALTA' ? '#f87171' : p === 'MEDIA' ? '#fbbf24' : p === 'BAJA' ? '#34d399' : '#6366f1'
+                  : '#13132a',
+                color: filtroPrioridad === p ? '#0d0d1a' : '#64748b',
+              }}
+            >
+              {p === 'TODAS' ? 'Todas' : p === 'ALTA' ? '🔴 Alta' : p === 'MEDIA' ? '🟡 Media' : '🟢 Baja'}
+            </button>
+          ))}
         </div>
 
         {/* FORMULARIO */}
@@ -158,7 +199,7 @@ function Dashboard() {
         <div style={{ display: "flex", gap: "1.2rem" }}>
           {(Object.keys(COLUMN_CONFIG) as Task["estado"][]).map((estado) => {
             const col = COLUMN_CONFIG[estado];
-            const tareas = tasks.filter((t) => t.estado === estado);
+            const tareas = tareasFiltradas.filter((t) => t.estado === estado);
             return (
               <div key={estado} style={{ flex: 1, background: "#0f0f20", borderRadius: "16px", padding: "1rem", border: `1px solid ${col.color}33`, minHeight: "450px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", padding: "0.5rem 0.75rem", background: col.bg, borderRadius: "8px", borderLeft: `3px solid ${col.color}` }}>
