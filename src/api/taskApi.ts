@@ -31,7 +31,7 @@ export const createTask = async (task: CreateTaskDTO): Promise<Task> => {
 }
 
 //Actualizar una tarea
-export const updateTask = async (id: number, task: Task): Promise<Task> => {
+export const updateTask = async (id: number, task: CreateTaskDTO): Promise<Task> => {
     const response = await api.put(`/tasks/${id}`, task)
     return response.data
 }
