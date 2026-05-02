@@ -27,7 +27,7 @@ const EMPTY_FORM: CreateTaskDTO = {
   prioridad: "MEDIA",
 };
 
-function Dashboard() {
+function Dashboard( { onLogout }: { onLogout: () => void }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -131,7 +131,7 @@ function Dashboard() {
       >
         <span
           style={{
-            fontSize: "3rem",
+            fontSize: "2rem",
             fontWeight: "700",
             letterSpacing: "-0.5px",
             background: "linear-gradient(135deg, #6366f1, #a855f7, #06b6d4)",
@@ -182,30 +182,21 @@ function Dashboard() {
               {tasks.length} tarea{tasks.length !== 1 ? "s" : ""} en total
             </p>
           </div>
+            <div style={{ display: "flex", gap: "0.8rem" }}>
           <button
-            onClick={() => {
-              if (showForm) {
-                closeForm();
-              } else {
-                setShowForm(true);
-              }
-            }}
-            style={{
-              background: showForm
-                ? "#1e1e3a"
-                : "linear-gradient(135deg, #6366f1, #a855f7)",
-              color: "white",
-              border: "none",
-              padding: "0.65rem 1.4rem",
-              borderRadius: "10px",
-              fontSize: "0.95rem",
-              fontWeight: "600",
-              boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)",
-            }}
+            onClick={onLogout}
+            style={{ background: "none", color: "#64748b", border: "1px solid #2d2d5a", padding: "0.65rem 1.2rem", borderRadius: "10px", fontSize: "0.9rem" }}
+          >
+            Cerrar sesión
+          </button>
+          <button
+            onClick={() => { if (showForm) { closeForm(); } else { setShowForm(true); } }}
+            style={{ background: showForm ? "#1e1e3a" : "linear-gradient(135deg, #6366f1, #a855f7)", color: "white", border: "none", padding: "0.65rem 1.4rem", borderRadius: "10px", fontSize: "0.95rem", fontWeight: "600", boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)" }}
           >
             {showForm ? "✕ Cancelar" : "+ Nueva tarea"}
           </button>
         </div>
+      </div>
 
         {/* FILTROS */}
         <div
@@ -608,7 +599,7 @@ function Dashboard() {
       <footer style={{ textAlign: "center", padding: "2rem" }}>
         <p
           style={{
-            fontSize: "1rem",
+            fontSize: "0.75rem",
             fontWeight: "500",
             WebkitBackgroundClip: "text",
           }}
