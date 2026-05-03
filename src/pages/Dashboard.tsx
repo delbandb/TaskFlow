@@ -27,7 +27,7 @@ const EMPTY_FORM: CreateTaskDTO = {
   prioridad: "MEDIA",
 };
 
-function Dashboard( { onLogout }: { onLogout: () => void }) {
+function Dashboard({ onLogout, username }: { onLogout: () => void, username: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -115,34 +115,77 @@ function Dashboard( { onLogout }: { onLogout: () => void }) {
       </div>
     );
 
+          const completadoStyle = `
+        @keyframes completadoBrillo {
+          0%   { box-shadow: 0 0 0px #10b981; border-color: #10b981; }
+          50%  { box-shadow: 0 0 18px #10b981; border-color: #10b981; }
+          100% { box-shadow: 0 0 6px #10b981; border-color: #10b981; }
+        }
+      `;
+
   return (
     <div
       style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
     >
+      <style>{completadoStyle}</style>
       {/* NAVBAR */}
-      <nav
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "1.5rem 2rem",
-          background: "#0a0a18",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "2rem",
-            fontWeight: "700",
-            letterSpacing: "-0.5px",
+      <nav style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "1rem 2rem",
+        background: "#0a0a18",
+        borderBottom: "1px solid #1e1e3a",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+      }}>
+        {/* LOGO */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <div style={{
+            width: "36px", height: "36px", borderRadius: "10px",
+            background: "linear-gradient(135deg, #6366f1, #a855f7)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "1.1rem", boxShadow: "0 4px 12px rgba(99,102,241,0.4)"
+          }}>
+            ✓
+          </div>
+          <span style={{
+            fontSize: "1.3rem", fontWeight: "700",
             background: "linear-gradient(135deg, #6366f1, #a855f7, #06b6d4)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          ✨ My personal Taskflow ✨
-        </span>
-      </nav>
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          }}>
+            TaskFlow
+          </span>
+        </div>
 
+        {/* USUARIO + LOGOUT */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{
+              width: "32px", height: "32px", borderRadius: "50%",
+              background: "linear-gradient(135deg, #6366f1, #a855f7)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "0.85rem", fontWeight: "700", color: "white"
+            }}>
+              {username.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ color: "#c7d2fe", fontSize: "0.9rem", fontWeight: "500" }}>
+              {username}
+            </span>
+          </div>
+          <button
+            onClick={onLogout}
+            style={{
+              background: "none", color: "#64748b",
+              border: "1px solid #2d2d5a", padding: "0.5rem 1rem",
+              borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer"
+            }}
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </nav>
       {/* CONTENIDO */}
       <div
         style={{
@@ -182,20 +225,12 @@ function Dashboard( { onLogout }: { onLogout: () => void }) {
               {tasks.length} tarea{tasks.length !== 1 ? "s" : ""} en total
             </p>
           </div>
-            <div style={{ display: "flex", gap: "0.8rem" }}>
-          <button
-            onClick={onLogout}
-            style={{ background: "none", color: "#64748b", border: "1px solid #2d2d5a", padding: "0.65rem 1.2rem", borderRadius: "10px", fontSize: "0.9rem" }}
-          >
-            Cerrar sesión
-          </button>
           <button
             onClick={() => { if (showForm) { closeForm(); } else { setShowForm(true); } }}
             style={{ background: showForm ? "#1e1e3a" : "linear-gradient(135deg, #6366f1, #a855f7)", color: "white", border: "none", padding: "0.65rem 1.4rem", borderRadius: "10px", fontSize: "0.95rem", fontWeight: "600", boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)" }}
           >
             {showForm ? "✕ Cancelar" : "+ Nueva tarea"}
           </button>
-        </div>
       </div>
 
         {/* FILTROS */}
@@ -447,8 +482,16 @@ function Dashboard( { onLogout }: { onLogout: () => void }) {
                         marginBottom: "0.6rem",
                         border: "1px solid #1e1e3a",
                         borderLeft: `3px solid ${prio.color}`,
+                        animation: task.estado === "COMPLETADO" ? "completadoBrillo 1.5s ease-in-out" : "none",
+                        position: "relative",
                       }}
                     >
+                      {task.estado === "COMPLETADO" && (
+                        <span style={{
+                          position: "absolute", top: "0.5rem", right: "0.5rem",
+                          color: "#10b981", fontSize: "1rem", fontWeight: "700"
+                        }}>✓</span>
+                      )}
                       <h3
                         style={{
                           fontSize: "0.9rem",
