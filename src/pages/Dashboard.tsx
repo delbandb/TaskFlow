@@ -9,15 +9,15 @@ import {
 } from "../api/taskApi";
 
 const COLUMN_CONFIG = {
-  PENDIENTE: { label: "📋 Pendiente", color: "#6366f1", bg: "#1e1b4b" },
-  EN_PROGRESO: { label: "⚡ En Progreso", color: "#f59e0b", bg: "#1c1a0e" },
-  COMPLETADO: { label: "✅ Completado", color: "#10b981", bg: "#052e16" },
+  PENDIENTE: { label: "Pendiente", color: "#6366f1", bg: "#1e1b4b" },
+  EN_PROGRESO: { label: "En Progreso", color: "#f59e0b", bg: "#1c1a0e" },
+  COMPLETADO: { label: "Completado", color: "#10b981", bg: "#052e16" },
 };
 
 const PRIORIDAD_CONFIG = {
-  ALTA: { color: "#f87171", bg: "#2d1515", label: "🔴 Alta" },
-  MEDIA: { color: "#fbbf24", bg: "#2d2515", label: "🟡 Media" },
-  BAJA: { color: "#34d399", bg: "#152d1e", label: "🟢 Baja" },
+  ALTA: { color: "#f87171", bg: "#2d1515", label: "Alta" },
+  MEDIA: { color: "#fbbf24", bg: "#2d2515", label: "Media" },
+  BAJA: { color: "#34d399", bg: "#152d1e", label: "Baja" },
 };
 
 const EMPTY_FORM: CreateTaskDTO = {
@@ -27,12 +27,19 @@ const EMPTY_FORM: CreateTaskDTO = {
   prioridad: "MEDIA",
 };
 
-function Dashboard({ onLogout, username }: { onLogout: () => void, username: string }) {
+interface DashboardProps {
+  onLogout: () => void;
+  username: string;
+}
+
+function Dashboard({ onLogout, username }: DashboardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState<CreateTaskDTO>(EMPTY_FORM);
+  const [error, setError] = useState("");
   const [filtroBusqueda, setFiltroBusqueda] = useState("");
   const [filtroPrioridad, setFiltroPrioridad] = useState<
     "TODAS" | Task["prioridad"]
@@ -42,9 +49,12 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
     getTasks()
       .then((data) => {
         setTasks(data);
-        setLoading(false);
+        setError("");
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setError("No se pudieron cargar tus tareas. Revisa tu conexión o vuelve a iniciar sesión.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const closeForm = () => {
@@ -54,17 +64,27 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
   };
 
   const handleSubmit = async () => {
-    if (!form.titulo.trim()) return;
-    if (editingTask) {
-      const actualizada = await updateTask(editingTask.id, form);
-      setTasks((prev) =>
-        prev.map((t) => (t.id === editingTask.id ? actualizada : t)),
-      );
-    } else {
-      const nueva = await createTask(form);
-      setTasks((prev) => [...prev, nueva]);
+    if (!form.titulo.trim() || saving) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      if (editingTask) {
+        const actualizada = await updateTask(editingTask.id, form);
+        setTasks((prev) =>
+          prev.map((task) => (task.id === editingTask.id ? actualizada : task)),
+        );
+      } else {
+        const nueva = await createTask(form);
+        setTasks((prev) => [...prev, nueva]);
+      }
+      closeForm();
+    } catch {
+      setError(editingTask ? "No se pudo actualizar la tarea." : "No se pudo crear la tarea.");
+    } finally {
+      setSaving(false);
     }
-    closeForm();
   };
 
   const handleEdit = (task: Task) => {
@@ -77,17 +97,30 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
       venceEn: task.venceEn,
     });
     setShowForm(true);
+    setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id: number) => {
-    await deleteTask(id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setError("");
+    try {
+      await deleteTask(id);
+      setTasks((prev) => prev.filter((task) => task.id !== id));
+    } catch {
+      setError("No se pudo borrar la tarea.");
+    }
   };
 
   const handleStatusChange = async (id: number, estado: Task["estado"]) => {
-    const actualizada = await changeTaskStatus(id, estado);
-    setTasks((prev) => prev.map((t) => (t.id === id ? actualizada : t)));
+    setError("");
+    try {
+      const actualizada = await changeTaskStatus(id, estado);
+      setTasks((prev) =>
+        prev.map((task) => (task.id === id ? actualizada : task)),
+      );
+    } catch {
+      setError("No se pudo cambiar el estado de la tarea.");
+    }
   };
 
   const tareasFiltradas = tasks.filter((task) => {
@@ -115,59 +148,76 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
       </div>
     );
 
-          const completadoStyle = `
-        @keyframes completadoBrillo {
-          0%   { box-shadow: 0 0 0px #10b981; border-color: #10b981; }
-          50%  { box-shadow: 0 0 18px #10b981; border-color: #10b981; }
-          100% { box-shadow: 0 0 6px #10b981; border-color: #10b981; }
-        }
-      `;
+  const completadoStyle = `
+    @keyframes completadoBrillo {
+      0% { box-shadow: 0 0 0 #10b981; border-color: #10b981; }
+      50% { box-shadow: 0 0 18px #10b981; border-color: #10b981; }
+      100% { box-shadow: 0 0 6px #10b981; border-color: #10b981; }
+    }
+  `;
 
   return (
-    <div
-      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
-    >
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <style>{completadoStyle}</style>
-      {/* NAVBAR */}
-      <nav style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "1rem 2rem",
-        background: "#0a0a18",
-        borderBottom: "1px solid #1e1e3a",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-      }}>
-        {/* LOGO */}
+
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "1rem 2rem",
+          background: "#0a0a18",
+          borderBottom: "1px solid #1e1e3a",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <div style={{
-            width: "36px", height: "36px", borderRadius: "10px",
-            background: "linear-gradient(135deg, #6366f1, #a855f7)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.1rem", boxShadow: "0 4px 12px rgba(99,102,241,0.4)"
-          }}>
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #6366f1, #a855f7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.1rem",
+              boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
+            }}
+          >
             ✓
           </div>
-          <span style={{
-            fontSize: "1.3rem", fontWeight: "700",
-            background: "linear-gradient(135deg, #6366f1, #a855f7, #06b6d4)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>
+          <span
+            style={{
+              fontSize: "1.3rem",
+              fontWeight: "700",
+              background: "linear-gradient(135deg, #6366f1, #a855f7, #06b6d4)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
             TaskFlow
           </span>
         </div>
 
-        {/* USUARIO + LOGOUT */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <div style={{
-              width: "32px", height: "32px", borderRadius: "50%",
-              background: "linear-gradient(135deg, #6366f1, #a855f7)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "0.85rem", fontWeight: "700", color: "white"
-            }}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.85rem",
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
               {username.charAt(0).toUpperCase()}
             </div>
             <span style={{ color: "#c7d2fe", fontSize: "0.9rem", fontWeight: "500" }}>
@@ -177,16 +227,20 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
           <button
             onClick={onLogout}
             style={{
-              background: "none", color: "#64748b",
-              border: "1px solid #2d2d5a", padding: "0.5rem 1rem",
-              borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer"
+              background: "none",
+              color: "#64748b",
+              border: "1px solid #2d2d5a",
+              padding: "0.5rem 1rem",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              cursor: "pointer",
             }}
           >
             Cerrar sesión
           </button>
         </div>
       </nav>
-      {/* CONTENIDO */}
+
       <div
         style={{
           flex: 1,
@@ -196,56 +250,70 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
           width: "100%",
         }}
       >
-        {/* CABECERA */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "2rem",
+            marginBottom: "1rem",
+            gap: "1rem",
           }}
         >
           <div>
-            <h1
-              style={{
-                fontSize: "1.4rem",
-                fontWeight: "600",
-                color: "#c7d2fe",
-              }}
-            >
+            <h1 style={{ fontSize: "1.4rem", fontWeight: "600", color: "#c7d2fe" }}>
               Mis Tareas
             </h1>
-            <p
-              style={{
-                color: "#64748b",
-                fontSize: "0.85rem",
-                marginTop: "0.2rem",
-              }}
-            >
+            <p style={{ color: "#64748b", fontSize: "0.85rem", marginTop: "0.2rem" }}>
               {tasks.length} tarea{tasks.length !== 1 ? "s" : ""} en total
             </p>
           </div>
           <button
-            onClick={() => { if (showForm) { closeForm(); } else { setShowForm(true); } }}
-            style={{ background: showForm ? "#1e1e3a" : "linear-gradient(135deg, #6366f1, #a855f7)", color: "white", border: "none", padding: "0.65rem 1.4rem", borderRadius: "10px", fontSize: "0.95rem", fontWeight: "600", boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)" }}
+            onClick={() => {
+              if (showForm) {
+                closeForm();
+              } else {
+                setShowForm(true);
+                setError("");
+              }
+            }}
+            style={{
+              background: showForm ? "#1e1e3a" : "linear-gradient(135deg, #6366f1, #a855f7)",
+              color: "white",
+              border: "none",
+              padding: "0.65rem 1.4rem",
+              borderRadius: "10px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              boxShadow: showForm ? "none" : "0 4px 15px rgba(99,102,241,0.4)",
+              cursor: "pointer",
+            }}
           >
-            {showForm ? "✕ Cancelar" : "+ Nueva tarea"}
+            {showForm ? "Cancelar" : "+ Nueva tarea"}
           </button>
-      </div>
+        </div>
 
-        {/* FILTROS */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.8rem",
-            marginBottom: "1.5rem",
-            flexWrap: "wrap",
-          }}
-        >
+        {error && (
+          <div
+            role="alert"
+            style={{
+              background: "#2d1515",
+              border: "1px solid #7f1d1d",
+              color: "#fecaca",
+              borderRadius: "8px",
+              padding: "0.75rem 1rem",
+              marginBottom: "1rem",
+              fontSize: "0.9rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "0.8rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
           <input
-            placeholder="🔍 Buscar tarea..."
+            placeholder="Buscar tarea..."
             value={filtroBusqueda}
-            onChange={(e) => setFiltroBusqueda(e.target.value)}
+            onChange={(event) => setFiltroBusqueda(event.target.value)}
             style={{
               flex: 1,
               minWidth: "200px",
@@ -258,10 +326,10 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
               outline: "none",
             }}
           />
-          {(["TODAS", "ALTA", "MEDIA", "BAJA"] as const).map((p) => (
+          {(["TODAS", "ALTA", "MEDIA", "BAJA"] as const).map((prioridad) => (
             <button
-              key={p}
-              onClick={() => setFiltroPrioridad(p)}
+              key={prioridad}
+              onClick={() => setFiltroPrioridad(prioridad)}
               style={{
                 padding: "0.6rem 1rem",
                 borderRadius: "8px",
@@ -270,30 +338,23 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                 border: "none",
                 cursor: "pointer",
                 background:
-                  filtroPrioridad === p
-                    ? p === "ALTA"
+                  filtroPrioridad === prioridad
+                    ? prioridad === "ALTA"
                       ? "#f87171"
-                      : p === "MEDIA"
+                      : prioridad === "MEDIA"
                         ? "#fbbf24"
-                        : p === "BAJA"
+                        : prioridad === "BAJA"
                           ? "#34d399"
                           : "#6366f1"
                     : "#13132a",
-                color: filtroPrioridad === p ? "#0d0d1a" : "#64748b",
+                color: filtroPrioridad === prioridad ? "#0d0d1a" : "#64748b",
               }}
             >
-              {p === "TODAS"
-                ? "Todas"
-                : p === "ALTA"
-                  ? "🔴 Alta"
-                  : p === "MEDIA"
-                    ? "🟡 Media"
-                    : "🟢 Baja"}
+              {prioridad === "TODAS" ? "Todas" : PRIORIDAD_CONFIG[prioridad].label}
             </button>
           ))}
         </div>
 
-        {/* FORMULARIO */}
         {showForm && (
           <div
             style={{
@@ -305,20 +366,13 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
               boxShadow: "0 8px 32px rgba(99,102,241,0.15)",
             }}
           >
-            <h2
-              style={{
-                fontSize: "1.1rem",
-                fontWeight: "600",
-                marginBottom: "1rem",
-                color: "#a5b4fc",
-              }}
-            >
+            <h2 style={{ fontSize: "1.1rem", fontWeight: "600", marginBottom: "1rem", color: "#a5b4fc" }}>
               {editingTask ? "Editar tarea" : "Nueva tarea"}
             </h2>
             <input
               placeholder="Título *"
               value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              onChange={(event) => setForm({ ...form, titulo: event.target.value })}
               style={{
                 width: "100%",
                 padding: "0.7rem 1rem",
@@ -329,14 +383,13 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                 color: "#e2e8f0",
                 fontSize: "0.95rem",
                 outline: "none",
+                boxSizing: "border-box",
               }}
             />
             <textarea
               placeholder="Descripción (opcional)"
               value={form.descripcion}
-              onChange={(e) =>
-                setForm({ ...form, descripcion: e.target.value })
-              }
+              onChange={(event) => setForm({ ...form, descripcion: event.target.value })}
               style={{
                 width: "100%",
                 padding: "0.7rem 1rem",
@@ -349,41 +402,33 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                 outline: "none",
                 minHeight: "80px",
                 resize: "vertical",
+                boxSizing: "border-box",
               }}
             />
-            <div
-              style={{
-                display: "flex",
-                gap: "0.8rem",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={{ display: "flex", gap: "0.8rem", alignItems: "center", flexWrap: "wrap" }}>
               <input
                 type="date"
                 value={form.venceEn ? form.venceEn.split("T")[0] : ""}
-                onChange={(e) =>
-                  setForm({ ...form, venceEn: e.target.value || undefined })
+                onChange={(event) =>
+                  setForm({ ...form, venceEn: event.target.value || undefined })
                 }
                 style={{
                   padding: "0.7rem 1rem",
-                  marginBottom: "0.8rem",
                   background: "#0d0d1a",
                   border: "1px solid #2d2d5a",
                   borderRadius: "8px",
                   color: "#e2e8f0",
                   fontSize: "0.95rem",
                   outline: "none",
-                  width: "100%",
                   colorScheme: "dark",
                 }}
               />
               <select
                 value={form.prioridad}
-                onChange={(e) =>
+                onChange={(event) =>
                   setForm({
                     ...form,
-                    prioridad: e.target.value as Task["prioridad"],
+                    prioridad: event.target.value as Task["prioridad"],
                   })
                 }
                 style={{
@@ -395,12 +440,13 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                   fontSize: "0.9rem",
                 }}
               >
-                <option value="BAJA">🟢 Baja</option>
-                <option value="MEDIA">🟡 Media</option>
-                <option value="ALTA">🔴 Alta</option>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
               </select>
               <button
                 onClick={handleSubmit}
+                disabled={saving}
                 style={{
                   background: "linear-gradient(135deg, #6366f1, #a855f7)",
                   color: "white",
@@ -410,19 +456,21 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                   fontSize: "0.95rem",
                   fontWeight: "600",
                   boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
+                  opacity: saving ? 0.65 : 1,
+                  cursor: saving ? "not-allowed" : "pointer",
                 }}
               >
-                {editingTask ? "Guardar cambios" : "Crear tarea"}
+                {saving ? "Guardando..." : editingTask ? "Guardar cambios" : "Crear tarea"}
               </button>
             </div>
           </div>
         )}
 
-        {/* COLUMNAS KANBAN */}
         <div style={{ display: "flex", gap: "1.2rem" }}>
           {(Object.keys(COLUMN_CONFIG) as Task["estado"][]).map((estado) => {
             const col = COLUMN_CONFIG[estado];
-            const tareas = tareasFiltradas.filter((t) => t.estado === estado);
+            const tareas = tareasFiltradas.filter((task) => task.estado === estado);
+
             return (
               <div
                 key={estado}
@@ -447,13 +495,7 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                     borderLeft: `3px solid ${col.color}`,
                   }}
                 >
-                  <span
-                    style={{
-                      fontWeight: "600",
-                      fontSize: "0.9rem",
-                      color: col.color,
-                    }}
-                  >
+                  <span style={{ fontWeight: "600", fontSize: "0.9rem", color: col.color }}>
                     {col.label}
                   </span>
                   <span
@@ -472,6 +514,11 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
 
                 {tareas.map((task) => {
                   const prio = PRIORIDAD_CONFIG[task.prioridad];
+                  const vence = task.venceEn ? new Date(task.venceEn) : null;
+                  const diasRestantes = vence
+                    ? Math.ceil((vence.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                    : null;
+
                   return (
                     <div
                       key={task.id}
@@ -487,74 +534,44 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                       }}
                     >
                       {task.estado === "COMPLETADO" && (
-                        <span style={{
-                          position: "absolute", top: "0.5rem", right: "0.5rem",
-                          color: "#10b981", fontSize: "1rem", fontWeight: "700"
-                        }}>✓</span>
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: "0.5rem",
+                            right: "0.5rem",
+                            color: "#10b981",
+                            fontSize: "1rem",
+                            fontWeight: "700",
+                          }}
+                        >
+                          ✓
+                        </span>
                       )}
-                      <h3
-                        style={{
-                          fontSize: "0.9rem",
-                          fontWeight: "600",
-                          marginBottom: "0.3rem",
-                          color: "#e2e8f0",
-                        }}
-                      >
+                      <h3 style={{ fontSize: "0.9rem", fontWeight: "600", marginBottom: "0.3rem", color: "#e2e8f0" }}>
                         {task.titulo}
                       </h3>
                       {task.descripcion && (
-                        <p
-                          style={{
-                            fontSize: "0.78rem",
-                            color: "#64748b",
-                            marginBottom: "0.6rem",
-                            lineHeight: "1.4",
-                          }}
-                        >
+                        <p style={{ fontSize: "0.78rem", color: "#64748b", marginBottom: "0.6rem", lineHeight: "1.4" }}>
                           {task.descripcion}
                         </p>
                       )}
-                      {task.venceEn &&
-                        (() => {
-                          const hoy = new Date();
-                          const vence = new Date(task.venceEn);
-                          const diasRestantes = Math.ceil(
-                            (vence.getTime() - hoy.getTime()) /
-                              (1000 * 60 * 60 * 24),
-                          );
-                          const color =
-                            diasRestantes <= 0
-                              ? "#f87171"
-                              : diasRestantes <= 3
-                                ? "#fbbf24"
-                                : "#64748b";
-                          const texto =
-                            diasRestantes <= 0
-                              ? "⚠️ Vencida"
-                              : diasRestantes === 1
-                                ? "⏰ Vence mañana"
-                                : `📅 ${vence.toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}`;
-                          return (
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                color,
-                                marginBottom: "0.5rem",
-                                fontWeight: diasRestantes <= 3 ? "600" : "400",
-                              }}
-                            >
-                              {texto}
-                            </p>
-                          );
-                        })()}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.4rem",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      {vence && diasRestantes !== null && (
+                        <p
+                          style={{
+                            fontSize: "0.75rem",
+                            color: diasRestantes <= 0 ? "#f87171" : diasRestantes <= 3 ? "#fbbf24" : "#64748b",
+                            marginBottom: "0.5rem",
+                            fontWeight: diasRestantes <= 3 ? "600" : "400",
+                          }}
+                        >
+                          {diasRestantes <= 0
+                            ? "Vencida"
+                            : diasRestantes === 1
+                              ? "Vence mañana"
+                              : vence.toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                        </p>
+                      )}
+                      <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
                         <span
                           style={{
                             fontSize: "0.7rem",
@@ -569,11 +586,8 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                         </span>
                         <select
                           value={task.estado}
-                          onChange={(e) =>
-                            handleStatusChange(
-                              task.id,
-                              e.target.value as Task["estado"],
-                            )
+                          onChange={(event) =>
+                            handleStatusChange(task.id, event.target.value as Task["estado"])
                           }
                           style={{
                             fontSize: "0.72rem",
@@ -598,6 +612,7 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                             color: "#6366f1",
                             padding: "0.2rem 0.5rem",
                             borderRadius: "6px",
+                            cursor: "pointer",
                           }}
                         >
                           Editar
@@ -611,6 +626,7 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                             color: "#f87171",
                             padding: "0.2rem 0.5rem",
                             borderRadius: "6px",
+                            cursor: "pointer",
                           }}
                         >
                           Borrar
@@ -621,14 +637,7 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
                 })}
 
                 {tareas.length === 0 && (
-                  <p
-                    style={{
-                      color: "#2d2d5a",
-                      fontSize: "0.82rem",
-                      textAlign: "center",
-                      marginTop: "3rem",
-                    }}
-                  >
+                  <p style={{ color: "#2d2d5a", fontSize: "0.82rem", textAlign: "center", marginTop: "3rem" }}>
                     Sin tareas aquí
                   </p>
                 )}
@@ -638,16 +647,9 @@ function Dashboard({ onLogout, username }: { onLogout: () => void, username: str
         </div>
       </div>
 
-      {/* FOOTER */}
       <footer style={{ textAlign: "center", padding: "2rem" }}>
-        <p
-          style={{
-            fontSize: "0.75rem",
-            fontWeight: "500",
-            WebkitBackgroundClip: "text",
-          }}
-        >
-          💸 KEEP HUSTLING 💸
+        <p style={{ fontSize: "0.75rem", fontWeight: "500", color: "#64748b" }}>
+          Keep hustling
         </p>
       </footer>
     </div>

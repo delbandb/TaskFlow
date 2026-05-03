@@ -12,7 +12,11 @@ function Login({ onLogin }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!username.trim() || !password.trim()) return;
+    if (!username.trim() || !password.trim() || loading) {
+      setError("Usuario y contraseña son obligatorios.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -29,9 +33,8 @@ function Login({ onLogin }: Props) {
 
       if (!response.ok) {
         setError(
-          isRegister ? "Usuario ya existe" : "Usuario o contraseña incorrectos",
+          isRegister ? "Ese usuario ya existe." : "Usuario o contraseña incorrectos.",
         );
-        setLoading(false);
         return;
       }
 
@@ -39,7 +42,8 @@ function Login({ onLogin }: Props) {
       localStorage.setItem("token", data.token);
       onLogin(data.token);
     } catch {
-      setError("Error de conexión con el servidor");
+      setError("No se pudo conectar con el servidor.");
+    } finally {
       setLoading(false);
     }
   };
@@ -53,6 +57,7 @@ function Login({ onLogin }: Props) {
         alignItems: "center",
         justifyContent: "center",
         background: "#0d0d1a",
+        padding: "1rem",
       }}
     >
       <span
@@ -65,7 +70,7 @@ function Login({ onLogin }: Props) {
           marginBottom: "2rem",
         }}
       >
-        ✨ My personal Taskflow ✨
+        TaskFlow
       </span>
 
       <div
@@ -93,7 +98,7 @@ function Login({ onLogin }: Props) {
         <input
           placeholder="Usuario"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(event) => setUsername(event.target.value)}
           style={{
             width: "100%",
             padding: "0.7rem 1rem",
@@ -111,8 +116,8 @@ function Login({ onLogin }: Props) {
           placeholder="Contraseña"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          onChange={(event) => setPassword(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && handleSubmit()}
           style={{
             width: "100%",
             padding: "0.7rem 1rem",
@@ -129,6 +134,7 @@ function Login({ onLogin }: Props) {
 
         {error && (
           <p
+            role="alert"
             style={{
               color: "#f87171",
               fontSize: "0.85rem",
@@ -153,6 +159,7 @@ function Login({ onLogin }: Props) {
             fontWeight: "600",
             boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
             opacity: loading ? 0.7 : 1,
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
           {loading ? "Cargando..." : isRegister ? "Registrarse" : "Entrar"}
