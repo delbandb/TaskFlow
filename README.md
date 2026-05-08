@@ -1,130 +1,103 @@
 # TaskFlow
 
-TaskFlow es una aplicación full-stack de gestión personal de tareas, construida con React, TypeScript, Spring Boot y MySQL. El proyecto está enfocado en demostrar un flujo completo de desarrollo: autenticación con JWT, tareas privadas por usuario, API REST protegida, persistencia en base de datos, manejo de errores en la interfaz y tests de lógica de negocio.
+TaskFlow is a full-stack personal task manager built with React, TypeScript, Spring Boot, Spring Security, JWT, Spring Data JPA, and MySQL. The project demonstrates a complete authenticated workflow: users can register, log in, and manage only their own tasks through a protected REST API.
 
-> Proyecto desarrollado como portfolio técnico para roles junior de desarrollo full-stack.
+## Why I Built It
 
-## Vista General
+I built TaskFlow to practice the full path between frontend and backend development: authentication, protected API calls, user-owned data, DTOs, validation, persistence, and error handling in the UI. It is intentionally simple as a product, but complete enough to show how the pieces of a real full-stack app fit together.
 
-TaskFlow permite a cada usuario registrarse, iniciar sesión y gestionar sus propias tareas en un tablero tipo Kanban. Las tareas se organizan por estado, prioridad y fecha de vencimiento. Cada usuario solo puede ver, editar y eliminar sus propias tareas.
+## Main Features
 
-## Funcionalidades
+- User registration and login.
+- JWT-based authentication.
+- Private tasks per authenticated user.
+- Full CRUD for tasks.
+- Task states: `PENDIENTE`, `EN_PROGRESO`, `COMPLETADO`.
+- Task priorities: `BAJA`, `MEDIA`, `ALTA`.
+- Optional due dates.
+- Search and priority filtering in the frontend.
+- Visual feedback when tasks are completed.
+- Frontend error handling for loading, creating, updating, deleting, and status changes.
+- DTO-based API responses so JPA entities are not exposed directly.
+- Backend tests for task ownership and service behavior.
 
-- Registro e inicio de sesión de usuarios.
-- Autenticación basada en JWT.
-- Tareas asociadas al usuario autenticado.
-- CRUD completo de tareas.
-- Estados: `PENDIENTE`, `EN_PROGRESO`, `COMPLETADO`.
-- Prioridades: `BAJA`, `MEDIA`, `ALTA`.
-- Fecha de vencimiento opcional.
-- Filtros por búsqueda y prioridad.
-- Animación visual al completar tareas.
-- Mensajes de error en operaciones de carga, creación, edición, borrado y cambio de estado.
-- API con DTOs para evitar exponer entidades JPA directamente.
-- Tests unitarios para la lógica de tareas asociadas a usuario.
+## Tech Stack
 
-## Stack Tecnológico
+| Layer | Tools |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, Axios |
+| Backend | Java 21, Spring Boot, Spring Security |
+| Auth | JWT |
+| Persistence | Spring Data JPA, MySQL |
+| Testing | JUnit 5, Mockito, Spring Boot Test |
+| Build tools | npm, Maven Wrapper |
 
-### Frontend
+## Architecture
 
-- React
-- TypeScript
-- Vite
-- Axios
-- CSS-in-JS con estilos inline
-
-### Backend
-
-- Java 21
-- Spring Boot
-- Spring Security
-- Spring Data JPA
-- JWT
-- Bean Validation
-- MySQL
-- Maven
-- JUnit 5
-- Mockito
-
-## Arquitectura
-
-```mermaid
-flowchart LR
-    A["React + TypeScript"] --> B["Axios HTTP Client"]
-    B --> C["Spring Boot REST API"]
-    C --> D["Spring Security + JWT"]
-    C --> E["TaskService"]
-    E --> F["Spring Data JPA"]
-    F --> G["MySQL"]
+```text
+React + TypeScript
+  -> Axios client with JWT header
+  -> Spring Boot REST API
+  -> Spring Security filter chain
+  -> Task service with user ownership checks
+  -> Spring Data JPA repositories
+  -> MySQL database
 ```
 
-## Seguridad y Diseño de API
+## Security Model
 
-El backend protege los endpoints de tareas mediante JWT. El token se envía desde el frontend en la cabecera:
+TaskFlow does not rely on the frontend to filter private data. The backend extracts the user from the JWT token and uses that user when listing, reading, updating, or deleting tasks. This means each task operation is scoped to the authenticated user.
 
-```http
-Authorization: Bearer <token>
-```
+The API also uses DTOs:
 
-Las tareas no se consultan globalmente. Cada operación utiliza el usuario extraído del token para asegurar que un usuario no pueda acceder a tareas de otro usuario.
+- `TaskRequest` for accepted create/update fields.
+- `TaskResponse` for data returned to the frontend.
+- `AuthRequest` and `AuthResponse` for login and registration.
 
-Además, la API usa DTOs:
-
-- `TaskRequest`: datos aceptados al crear o actualizar tareas.
-- `TaskResponse`: datos devueltos al frontend.
-
-Esto evita devolver directamente entidades JPA y reduce el riesgo de exponer datos internos como la relación `user` o información sensible.
-
-## Estructura del Proyecto
+## Project Structure
 
 ```text
 Taskflow/
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── pages/
-│   │   ├── types/
-│   │   └── App.tsx
-│   └── package.json
-│
-└── backend/
-    ├── src/main/java/com/example/backend/
-    │   ├── config/
-    │   ├── controller/
-    │   ├── dto/
-    │   ├── model/
-    │   ├── repository/
-    │   └── service/
-    ├── src/test/
-    └── pom.xml
+|-- frontend/
+|   |-- src/
+|   |   |-- api/taskApi.ts       # Axios client and task API calls
+|   |   |-- pages/Dashboard.tsx   # Authenticated task board
+|   |   |-- pages/Login.tsx       # Login/register screen
+|   |   |-- types/Task.ts         # TypeScript task models
+|   |   `-- App.tsx              # Auth state and routing logic
+|   |-- package.json
+|   `-- vite.config.ts
+|-- backend/
+|   |-- src/main/java/com/example/backend/
+|   |   |-- config/               # Security configuration
+|   |   |-- controller/           # Auth and task controllers
+|   |   |-- dto/                  # API DTOs
+|   |   |-- model/                # JPA entities
+|   |   |-- repository/           # Spring Data repositories
+|   |   `-- service/              # JWT and task logic
+|   |-- src/test/                # Backend tests
+|   `-- pom.xml
+`-- README.md
 ```
 
-## Cómo Ejecutarlo en Local
+## Run Locally
 
-### Requisitos
+### Requirements
 
-- Node.js
-- npm
-- Java 21 o superior
-- MySQL
-- Maven Wrapper incluido en el backend
+- Node.js and npm.
+- Java 21 or newer.
+- MySQL.
+- Maven Wrapper, included in the backend folder.
 
-### 1. Clonar el repositorio
+### 1. Configure MySQL
 
-```bash
-git clone https://github.com/delbandb/TaskFlow.git
-cd TaskFlow
-```
-
-### 2. Configurar MySQL
-
-Crea una base de datos local:
+Create a local database:
 
 ```sql
 CREATE DATABASE taskflow;
 ```
 
-Configura el backend en `backend/src/main/resources/application.properties`:
+Configure `backend/src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/taskflow
@@ -135,27 +108,29 @@ spring.jpa.hibernate.ddl-auto=update
 server.port=8080
 ```
 
-### 3. Ejecutar Backend
+For a production deployment, move database credentials and the JWT secret into environment variables.
+
+### 2. Start the Backend
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-En Windows:
+On Windows:
 
 ```powershell
 cd backend
 .\mvnw spring-boot:run
 ```
 
-El backend se ejecuta en:
+The backend runs at:
 
 ```text
 http://localhost:8080
 ```
 
-### 4. Ejecutar Frontend
+### 3. Start the Frontend
 
 ```bash
 cd frontend
@@ -163,55 +138,22 @@ npm install
 npm run dev
 ```
 
-El frontend se ejecuta en:
+The frontend runs at:
 
 ```text
 http://localhost:5173
 ```
 
-## Tests
+## Main API Endpoints
 
-### Backend
-
-```bash
-cd backend
-./mvnw test
-```
-
-En Windows:
-
-```powershell
-cd backend
-.\mvnw test
-```
-
-Los tests cubren:
-
-- Creación de tareas asociadas al usuario autenticado.
-- Listado de tareas solo del usuario autenticado.
-- Actualización de tareas propias.
-- Eliminación de tareas propias.
-- Carga del contexto de Spring Boot.
-
-### Frontend
-
-```bash
-cd frontend
-npm run build
-```
-
-El build valida TypeScript y genera la versión de producción con Vite.
-
-## Endpoints Principales
-
-### Autenticación
+### Authentication
 
 ```http
 POST /api/auth/register
 POST /api/auth/login
 ```
 
-### Tareas
+### Tasks
 
 ```http
 GET    /api/tasks
@@ -222,57 +164,43 @@ PATCH  /api/tasks/{id}/status
 DELETE /api/tasks/{id}
 ```
 
-Todos los endpoints de tareas requieren JWT.
+All task endpoints require:
 
-## Variables de Entorno Recomendadas para Producción
-
-Antes de publicar el proyecto, conviene mover valores sensibles a variables de entorno:
-
-```properties
-spring.datasource.url=${DATABASE_URL}
-spring.datasource.username=${DATABASE_USERNAME}
-spring.datasource.password=${DATABASE_PASSWORD}
-jwt.secret=${JWT_SECRET}
+```http
+Authorization: Bearer <token>
 ```
 
-En el frontend:
+## Tests and Checks
 
-```env
-VITE_API_URL=https://tu-backend.com/api
+Backend tests:
+
+```bash
+cd backend
+./mvnw test
 ```
 
-## Decisiones Técnicas
+Frontend build check:
 
-- Se eligió JWT para practicar autenticación stateless.
-- Se añadieron DTOs para separar la API pública del modelo de persistencia.
-- Las tareas se filtran por usuario en el backend, no solo en el frontend.
-- Se añadieron mensajes de error para evitar fallos silenciosos en la experiencia de usuario.
-- Se mantuvo una interfaz sencilla, clara y enfocada en productividad.
+```bash
+cd frontend
+npm run build
+```
 
-## Qué Aprendí Construyendo TaskFlow
+## What I Learned
 
-- Integrar React con una API REST real.
-- Proteger rutas backend con Spring Security y JWT.
-- Gestionar CORS entre frontend y backend.
-- Diseñar relaciones entre entidades JPA.
-- Evitar exponer entidades internas mediante DTOs.
-- Escribir tests unitarios con JUnit y Mockito.
-- Depurar errores reales de integración entre frontend, backend y base de datos.
+- Connecting a React frontend to a real REST API.
+- Managing JWT authentication on both frontend and backend.
+- Protecting user-owned data in the service layer.
+- Handling CORS between frontend and backend during local development.
+- Using DTOs instead of exposing JPA entities directly.
+- Writing backend tests with JUnit and Mockito.
+- Debugging integration issues between UI, API, auth, and database.
 
-## Próximas Mejoras
+## Roadmap
 
-- Desplegar frontend en Vercel y backend con base de datos MySQL en Railway.
-- Añadir documentación OpenAPI/Swagger.
-- Añadir tests de integración para endpoints REST.
-- Añadir tests frontend con React Testing Library.
-- Añadir página de política de privacidad para publicación pública.
-- Mejorar diseño responsive para pantallas pequeñas.
-
-## Estado del Proyecto
-
-Proyecto funcional y preparado para portfolio. Actualmente está orientado a ejecución local y listo para una futura publicación en internet con variables de entorno, dominio público y documentación adicional de despliegue.
-
-## Autor
-
-Desarrollado por **delbandb** como proyecto de portfolio full-stack.
-
+- Add OpenAPI/Swagger documentation.
+- Add integration tests for REST endpoints.
+- Add frontend tests with React Testing Library.
+- Move configuration to environment variables for deployment.
+- Deploy frontend and backend with a managed MySQL database.
+- Improve responsive layout for smaller screens.
